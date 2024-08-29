@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\GalleryController;
+use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\MakeupArtistProfileController;
 use App\Http\Controllers\Api\RequestController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,9 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
     Route::post('user/profile', [UserProfileController::class, 'updateProfile']);
     Route::post('user/logout', [LogoutController::class, 'logout']);
     Route::post('request', [RequestController::class, 'create']); // User can create a request
+
+    Route::get('mua/{id_mua}/schedules', [ScheduleController::class, 'getMuaSchedules']);
+    Route::get('mua/{id_mua}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
 });
 
 // Routes for admins
@@ -37,6 +41,8 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::get('mua/requests', [RequestController::class, 'viewAllRequests']);
     Route::post('request/{id}/approve', [RequestController::class, 'approve']); // MUA can approve requests
     Route::post('request/{id}/reject', [RequestController::class, 'reject']); // MUA can reject requests
+
+    Route::get('mua/schedules', [ScheduleController::class, 'getSchedules']);
 });
 
 

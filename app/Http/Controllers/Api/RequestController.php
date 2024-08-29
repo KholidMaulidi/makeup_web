@@ -108,7 +108,8 @@ class RequestController extends Controller
     public function viewAllRequests() //add filter dates & paginate 
     {
         $muaId = Auth::id();
-        $requests = Request::where('id_mua', $muaId)->paginate(5);
+        $requests = Request::where('id_mua', $muaId)
+            ->paginate(1);
 
         if ($requests->isEmpty()) {
             return response()->json([
