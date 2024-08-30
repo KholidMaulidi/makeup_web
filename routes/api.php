@@ -26,8 +26,8 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
 
     Route::get('mua/{id_mua}/schedules', [ScheduleController::class, 'getMuaSchedules']);
     Route::get('mua/{id_mua}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
-
-    Route::get('packages', [PackageController::class, 'index']);
+    
+    Route::get('mua/{id_mua}/packages', [PackageController::class, 'show_mua_packages']);
 });
 
 // Routes for admins
@@ -47,6 +47,7 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::post('request/{id}/reject', [RequestController::class, 'reject']); // MUA can reject requests
 
     Route::get('mua/schedules', [ScheduleController::class, 'getSchedules']);
+    Route::get('mua/mua-packages', [PackageController::class, 'show_mua_packages']);
     Route::resource('mua/packages', PackageController::class);
 });
 

@@ -16,7 +16,8 @@ class PackageController extends Controller
      public function index()
      {
           try {
-               $packages = Package::all();
+               $id = Auth::id();
+               $packages = Package::where('mua_id', $id)->get();
 
                if ($packages->isEmpty()) {
                     return $this->successResponse([], 'No packages available', 200);
@@ -45,6 +46,12 @@ class PackageController extends Controller
      {
           try {
                $request['mua_id'] = Auth::id();
+
+               if (is_null(Auth::user()->makeupArtistProfile)) {
+                    return response()->json([
+                         'message' => 'Please complete your profile.'
+                    ], 400);
+               }
 
                $data = $request->validate([
                     'package_name' => 'required|string',
@@ -97,6 +104,22 @@ class PackageController extends Controller
                $package->delete();
 
                return $this->successResponse([], 'Package deleted successfully', 200);
+          } catch (\Throwable $th) {
+               return $this->errorResponse($th->getMessage(), [], 500);
+          }
+     }
+
+     public function show_mua_packages($id_mua)
+     {
+          try {
+
+               $packages = Package::where('mua_id', $id_mua)->get();
+
+               if ($packages->isEmpty()) {
+                    return $this->successResponse([], 'No packages available', 200);
+               }
+
+               return $this->successResponse($packages, 'Packages fetched successfully', 200);
           } catch (\Throwable $th) {
                return $this->errorResponse($th->getMessage(), [], 500);
           }
