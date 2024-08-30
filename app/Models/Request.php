@@ -9,6 +9,8 @@ class Request extends Model
 {
     use HasFactory;
 
+    protected $table = 'requests';
+    protected $primaryKey = 'id';
     protected $casts = [
         'date' => 'date:Y-m-d',
         'start_time' => 'datetime:H:i',
@@ -18,6 +20,7 @@ class Request extends Model
     protected $fillable = [
         'id_user',
         'id_mua',
+        'package_id',
         'date',
         'start_time',
         'end_time',
@@ -32,6 +35,11 @@ class Request extends Model
     public function mua()
     {
         return $this->belongsTo(User::class, 'id_mua');
+    }
+
+    public function package()
+    {
+        return $this->belongsTo(Package::class, 'package_id');
     }
 }
 
