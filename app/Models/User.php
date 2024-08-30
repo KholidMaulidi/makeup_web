@@ -68,4 +68,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Request::class, 'id_user');
     }
+    public function packages()
+    {
+        return $this->hasMany(Package::class, 'mua_id');
+    }
 }

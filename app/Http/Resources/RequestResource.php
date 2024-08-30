@@ -20,6 +20,12 @@ class RequestResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ],
+            'package' => [
+                'id' => $this->package->id,
+                'name' => $this->package->package_name,
+                'visit_type' => $this->package->visit_type,
+                'price' => $this->package->price,
+            ],
             'mua' => [
                 'id' => $this->mua->id,
                 'name' => $this->mua->name,

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Request;
 use App\Models\User;
 use App\Http\Resources\RequestResource;
+use App\Models\Package;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -15,17 +16,18 @@ class RequestController extends Controller
     public function create(HttpRequest $request) //before do req add information packet MUA
     {
         $validatedData = $request->validate([
-            'id_mua' => 'required|exists:users,id',
+            // 'id_mua' => 'required|exists:users,id',
             'date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
+            'package_id' => 'required|exists:packages,id',
         ]);
 
         $date = Carbon::parse($validatedData['date']);
         $startTime = Carbon::parse($validatedData['start_time']);
         $endTime = Carbon::parse($validatedData['end_time']);
 
-        $approvedRequests = Request::where('id_mua', $validatedData['id_mua'])->get()->filter(function ($approvedRequest) use ($date) {
+        $approvedRequests = Request::where('package_id', $validatedData['package_id'])->get()->filter(function ($approvedRequest) use ($date) {
             return Carbon::parse($approvedRequest->date)->isSameDay($date) &&
                 $approvedRequest->status === 'approved';
         });
@@ -33,23 +35,32 @@ class RequestController extends Controller
         $conflictingRequests = $approvedRequests->filter(function ($approvedRequest) use ($startTime, $endTime) {
             $approvedStartTime = Carbon::parse($approvedRequest->start_time);
             $approvedEndTime = Carbon::parse($approvedRequest->end_time);
-        
+
             return ($approvedStartTime->lt($endTime) && $approvedEndTime->gt($startTime)) ||
                 $approvedEndTime->eq($startTime);
         });
-        
+
         if ($conflictingRequests->isNotEmpty()) {
             return response()->json([
                 'message' => 'The selected time slot conflicts with an existing approved request.'
             ], 400);
         }
 
+        if (is_null(Auth::user()->userProfile)) {
+            return response()->json([
+                'message' => 'Please complete your profile.'
+            ], 400);
+        }
+
+        $id_mua = Package::find($validatedData['package_id'])->mua_id;
+
         $newRequest = Request::create([
             'id_user' => Auth::id(),
-            'id_mua' => $validatedData['id_mua'],
+            'id_mua' => $id_mua,
             'date' => $date->format('Y-m-d'),
             'start_time' => $startTime->format('H:i'),
             'end_time' => $endTime->format('H:i'),
+            'package_id' => $validatedData['package_id'],
             'status' => 'pending',
         ]);
 
@@ -108,8 +119,7 @@ class RequestController extends Controller
     public function viewAllRequests() //add filter dates & paginate 
     {
         $muaId = Auth::id();
-        $requests = Request::where('id_mua', $muaId)
-            ->paginate(1);
+        $requests = Request::where('id_mua', $muaId)->paginate(10);
 
         if ($requests->isEmpty()) {
             return response()->json([

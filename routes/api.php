@@ -7,9 +7,11 @@ use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\MakeupArtistProfileController;
+use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\RequestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
+use App\Models\Package;
 
 // Public routes
 Route::post('register', [RegisterController::class, 'register']);
@@ -24,6 +26,8 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
 
     Route::get('mua/{id_mua}/schedules', [ScheduleController::class, 'getMuaSchedules']);
     Route::get('mua/{id_mua}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
+
+    Route::get('packages', [PackageController::class, 'index']);
 });
 
 // Routes for admins
@@ -43,6 +47,7 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::post('request/{id}/reject', [RequestController::class, 'reject']); // MUA can reject requests
 
     Route::get('mua/schedules', [ScheduleController::class, 'getSchedules']);
+    Route::resource('mua/packages', PackageController::class);
 });
 
 
