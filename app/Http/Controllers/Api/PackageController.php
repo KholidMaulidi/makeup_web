@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Models\Package;
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Traits\JsonResponseTrait;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\PackageResource;
 
 class PackageController extends Controller
 {
@@ -23,7 +24,7 @@ class PackageController extends Controller
                     return $this->successResponse([], 'No packages available', 200);
                }
 
-               return $this->successResponse($packages, 'Packages fetched successfully', 200);
+               return $this->successResponse(PackageResource::collection($packages), 'Get Packages successfully', 200);
           } catch (\Throwable $th) {
                return $this->errorResponse($th->getMessage(), [], 500);
           }
@@ -32,11 +33,13 @@ class PackageController extends Controller
      public function show($id)
      {
           try {
-               $package = Package::find($id);
+               $package = Package::with('details')->find($id);
 
                return $this->successResponse([
-                    'package' => $package,
+                    'package' => new PackageResource($package),
                ], 'Get Package successfully', 200);
+
+               
           } catch (\Throwable $th) {
                return $this->errorResponse($th->getMessage(), [], 500);
           }
@@ -55,19 +58,23 @@ class PackageController extends Controller
 
                $data = $request->validate([
                     'package_name' => 'required|string',
-                    'visit_type' => 'required|string',
+                    'description' => 'required|string',
                     'price' => 'required|numeric',
                     'mua_id' => 'required|exists:users,id',
                ]);
 
                $package = new Package;
                $package->package_name = $data['package_name'];
-               $package->visit_type = $data['visit_type'];
+               $package->description = $data['description'];
                $package->price = $data['price'];
                $package->mua_id = $data['mua_id'];
                $package->save();
 
-               return $this->successResponse($package, 'Package created successfully', 201);
+               return $this->successResponse(
+                    new PackageResource($package->load('details')),
+                    'Package created successfully',
+                    201
+               );
           } catch (\Throwable $th) {
                return $this->errorResponse($th->getMessage(), [], 500);
           }
@@ -79,19 +86,21 @@ class PackageController extends Controller
 
                $data = $request->validate([
                     'package_name' => 'required|string',
-                    'visit_type' => 'required|string',
+                    'description' => 'required|string',
                     'price' => 'required|numeric',
                     'mua_id' => 'required|exists:users,id',
                ]);
 
                $package = Package::find($id);
                $package->package_name = $data['package_name'];
-               $package->visit_type = $data['visit_type'];
+               $package->description = $data['description'];
                $package->price = $data['price'];
                $package->mua_id = $data['mua_id'];
                $package->save();
 
-               return $this->successResponse($package, 'Package updated successfully', 200);
+               return $this->successResponse([
+                    'package' => new PackageResource($package),
+               ], 'Package Updated successfully', 200);
           } catch (\Throwable $th) {
                return $this->errorResponse($th->getMessage(), [], 500);
           }
@@ -113,13 +122,13 @@ class PackageController extends Controller
      {
           try {
 
-               $packages = Package::where('mua_id', $id_mua)->get();
+               $packages = Package::with('details')->where('mua_id', $id_mua)->get();
 
                if ($packages->isEmpty()) {
                     return $this->successResponse([], 'No packages available', 200);
                }
 
-               return $this->successResponse($packages, 'Packages fetched successfully', 200);
+               return $this->successResponse(PackageResource::collection($packages), 'Get Packages successfully', 200);
           } catch (\Throwable $th) {
                return $this->errorResponse($th->getMessage(), [], 500);
           }
