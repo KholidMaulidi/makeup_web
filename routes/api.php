@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\RequestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
-use App\Models\Package;
+use App\Http\Controllers\Api\PackageDetailController;
 
 // Public routes
 Route::post('register', [RegisterController::class, 'register']);
@@ -48,7 +48,16 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
 
     Route::get('mua/schedules', [ScheduleController::class, 'getSchedules']);
     Route::get('mua/mua-packages', [PackageController::class, 'show_mua_packages']);
-    Route::resource('mua/packages', PackageController::class);
+    Route::get('mua/packages', [PackageController::class, 'index']);
+    Route::get('mua/packages/{id}', [PackageController::class, 'show']);
+    Route::post('mua/packages', [PackageController::class, 'store']);
+    Route::put('mua/packages/{id}', [PackageController::class, 'update']);
+    Route::delete('mua/packages/{id}', [PackageController::class, 'destroy']);
+    
+    Route::post('mua/packages/{package_id}/details', [PackageDetailController::class, 'store']);
+    Route::put('mua/packages/{package_id}/details', [PackageDetailController::class, 'update']);
+    Route::delete('mua/packages/{package_id}/details', [PackageDetailController::class, 'destroy']);
+    
 });
 
 
