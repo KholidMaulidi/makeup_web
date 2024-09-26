@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Request;
 use App\Models\User;
+use App\Models\DayOff;
 use App\Http\Resources\RequestResource;
 use App\Models\Package;
 use Illuminate\Http\Request as HttpRequest;
@@ -53,6 +54,16 @@ class RequestController extends Controller
         }
 
         $id_mua = Package::find($validatedData['package_id'])->mua_id;
+
+        $dayOff = DayOff::where('id_mua', $id_mua)
+        ->whereDate('date', $date)
+        ->exists();
+
+        if ($dayOff) {
+            return response()->json([
+                'message' => 'The selected date is a day off for this MUA. Please choose another date.'
+            ], 400);
+        }
 
         $newRequest = Request::create([
             'id_user' => Auth::id(),

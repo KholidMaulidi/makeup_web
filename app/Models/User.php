@@ -72,4 +72,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Package::class, 'mua_id');
     }
+
+    public function offDays()
+    {
+        return $this->hasMany(DayOff::class, 'id_mua');
+    }
 }
