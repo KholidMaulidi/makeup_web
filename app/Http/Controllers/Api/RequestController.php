@@ -2,59 +2,135 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\Request;
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\DayOff;
 use App\Http\Resources\RequestResource;
 use App\Models\Package;
-use Illuminate\Http\Request as HttpRequest;
+use App\Models\Request;
+use App\Models\RequestPackage;
+use App\Traits\JsonResponseTrait;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
+use App\Http\Resources\RequestResource;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request as HttpRequest;
 
 class RequestController extends Controller
 {
-    public function create(HttpRequest $request) //before do req add information packet MUA
+    use JsonResponseTrait;
+
+    public function preview(HttpRequest $request)
     {
-        $validatedData = $request->validate([
-            // 'id_mua' => 'required|exists:users,id',
-            'date' => 'required|date',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'package_id' => 'required|exists:packages,id',
-        ]);
+        try {
+    
+            $rules = [
+                'packages' => 'required|array',
+                'packages.*.id' => 'required|exists:packages,id',
+                'packages.*.quantity' => 'required|integer|min:1',
+                'date' => 'required|date',
+                'start_time' => 'required|date_format:H:i',
+                'end_time' => 'required|date_format:H:i|after:start_time',
+                'visit_type' => 'required|string|in:offsite,onsite',
+            ];
 
-        $date = Carbon::parse($validatedData['date']);
-        $startTime = Carbon::parse($validatedData['start_time']);
-        $endTime = Carbon::parse($validatedData['end_time']);
+            if ($request->input('visit_type') === 'offsite') {
+                $rules['latitude'] = 'required|numeric';
+                $rules['longitude'] = 'required|numeric';
+            }
 
-        $approvedRequests = Request::where('package_id', $validatedData['package_id'])->get()->filter(function ($approvedRequest) use ($date) {
-            return Carbon::parse($approvedRequest->date)->isSameDay($date) &&
-                $approvedRequest->status === 'approved';
-        });
+            $validator = Validator::make($request->all(), $rules);
 
-        $conflictingRequests = $approvedRequests->filter(function ($approvedRequest) use ($startTime, $endTime) {
-            $approvedStartTime = Carbon::parse($approvedRequest->start_time);
-            $approvedEndTime = Carbon::parse($approvedRequest->end_time);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-            return ($approvedStartTime->lt($endTime) && $approvedEndTime->gt($startTime)) ||
-                $approvedEndTime->eq($startTime);
-        });
+            $validatedData = $validator->validated();
 
-        if ($conflictingRequests->isNotEmpty()) {
+            $totalQuantity = 0;
+            $totalPrice = 0;
+
+            if ($validatedData['visit_type'] === 'offsite') {
+                $distance = $this->calculate_distance($validatedData['latitude'], $validatedData['longitude'], 'K', $validatedData['packages'][0]['id']);
+                $postage = $this->calculate_postage($distance);
+            } else {
+                $distance = 0;
+                $postage = 0;
+            }
+
+            foreach ($validatedData['packages'] as $package) {
+                $totalQuantity += $package['quantity'];
+                $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
+            }
+
+            
             return response()->json([
-                'message' => 'The selected time slot conflicts with an existing approved request.'
-            ], 400);
+                'total_quantity' => $totalQuantity,
+                'total_price' => $totalPrice,
+                'postage' => $postage,
+                'distance' => $distance,
+                'visit_type' => $validatedData['visit_type'],
+            ], 200);
+            
+        } catch (\Throwable $th) {
+            // Tangani error dan kembalikan response dengan pesan error
+            return $this->errorResponse($th->getMessage(), [], 500);
         }
+    }
 
-        if (is_null(Auth::user()->userProfile)) {
-            return response()->json([
-                'message' => 'Please complete your profile.'
-            ], 400);
-        }
 
-        $id_mua = Package::find($validatedData['package_id'])->mua_id;
+    public function create(HttpRequest $request)
+    {
+        try {
+            //
+            $rules = [
+                'packages' => 'required|array',
+                'packages.*.id' => 'required|exists:packages,id',
+                'packages.*.quantity' => 'required|integer|min:1',
+                'date' => 'required|date',
+                'start_time' => 'required|date_format:H:i',
+                'end_time' => 'required|date_format:H:i|after:start_time',
+                'visit_type' => 'required|string|in:offsite,onsite',
+            ];
 
+            
+            if ($request->input('visit_type') === 'offsite') {
+                $rules['latitude'] = 'required|numeric';
+                $rules['longitude'] = 'required|numeric';
+            }
+
+            
+            $validator = Validator::make($request->all(), $rules);
+
+            
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            
+            $validatedData = $validator->validated();
+
+            
+            $date = Carbon::parse($validatedData['date']);
+            $startTime = Carbon::parse($validatedData['start_time']);
+            $endTime = Carbon::parse($validatedData['end_time']);
+
+            
+            $muaId = Package::find($validatedData['packages'][0]['id'])->mua_id;
+
+            
+            $existingApprovedRequest = Request::where('id_mua', $muaId)
+                ->where('date', $date->format('Y-m-d'))
+                ->where('status', 'approved')
+                ->exists();
         $dayOff = DayOff::where('id_mua', $id_mua)
         ->whereDate('date', $date)
         ->exists();
@@ -75,10 +151,66 @@ class RequestController extends Controller
             'status' => 'pending',
         ]);
 
-        return new RequestResource($newRequest);
+            if ($existingApprovedRequest) {
+                return response()->json([
+                    'message' => 'The MUA is already booked for the selected date.'
+                ], 400);
+            }
+
+            
+            $totalQuantity = 0;
+            $totalPrice = 0;
+
+            
+            if ($validatedData['visit_type'] === 'offsite') {
+                $distance = $this->calculate_distance($validatedData['latitude'], $validatedData['longitude'], 'K', $validatedData['packages'][0]['id']);
+                $postage = $this->calculate_postage($distance);
+            } else {
+                $distance = 0;
+                $postage = 0;
+            }
+
+            
+            foreach ($validatedData['packages'] as $package) {
+                $totalQuantity += $package['quantity'];
+                $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
+            }
+
+            
+            $newRequest = Request::create([
+                'id_user' => Auth::id(),
+                'id_mua' => $muaId,
+                'date' => $date->format('Y-m-d'),
+                'start_time' => $startTime->format('H:i'),
+                'end_time' => $endTime->format('H:i'),
+                'postage' => $postage,
+                'total_price' => $totalPrice,
+                'visit_type' => $validatedData['visit_type'],
+                'status' => 'pending', 
+                'distance' => $distance,
+            ]);
+
+            
+            foreach ($validatedData['packages'] as $package) {
+                RequestPackage::create([
+                    'request_id' => $newRequest->id,
+                    'package_id' => $package['id'],
+                    'quantity' => $package['quantity'],
+                ]);
+            }
+
+            
+            $requestResource = new RequestResource($newRequest);
+
+            return response()->json($requestResource, 201);
+        } catch (\Throwable $th) {
+            
+            return $this->errorResponse($th->getMessage(), [], 500);
+        }
     }
 
-    public function approve($id) //add information
+
+    public function approve($id)
     {
         $requestToApprove = Request::findOrFail($id);
 
@@ -100,7 +232,7 @@ class RequestController extends Controller
             $approvedEndTime = Carbon::parse($approvedRequest->end_time);
 
             return ($approvedStartTime->lt($endTime) && $approvedEndTime->gt($startTime)) ||
-                $approvedEndTime->eq($startTime);
+                ($approvedEndTime->eq($startTime) || $approvedStartTime->eq($endTime));
         });
 
         if ($conflictingRequests->isNotEmpty()) {
@@ -132,6 +264,10 @@ class RequestController extends Controller
         $muaId = Auth::id();
         $requests = Request::where('id_mua', $muaId)->paginate(10);
 
+        if ($requests->has('date')) {
+            $requests = Request::where('id_mua', $muaId)->where('date', $requests->date)->paginate(10);
+        }
+
         if ($requests->isEmpty()) {
             return response()->json([
                 'message' => 'No requests available',
@@ -139,5 +275,67 @@ class RequestController extends Controller
         }
 
         return RequestResource::collection($requests);
+    }
+
+    public function viewRequest($id)
+    {
+        $request = Request::findOrFail($id);
+
+        if (Auth::id() !== $request->id_mua) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return new RequestResource($request);
+    }
+
+    
+
+    public function calculate_distance($lat2, $lon2, $unit, $package_id)
+    {
+        $package = Package::find($package_id);
+        $mua = User::find($package->mua_id);
+        $lat1 = $mua->makeupArtistProfile->latitude;
+        $lon1 = $mua->makeupArtistProfile->longitude;
+
+        if (($lat1 == $lat2) && ($lon1 == $lon2)) {
+            return 0;
+        } else {
+            $theta = $lon1 - $lon2;
+            $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+            $dist = acos($dist);
+            $dist = rad2deg($dist);
+            $miles = $dist * 60 * 1.1515;
+            $unit = strtoupper($unit);
+
+            if ($unit == "K") {
+                $distance = ($miles * 1.609344);
+            } else if ($unit == "N") {
+                $distance = ($miles * 0.8684);
+            } else {
+                $distance = $miles;
+            }
+
+            return round($distance, 2);
+        }
+    } 
+
+    public function calculate_postage($distance)
+    {
+        if ($distance <= 5) {
+            return $distance * 5000;
+        } else if($distance > 5 && $distance <= 10) {
+            return $distance * 7000;
+        } else if($distance > 10) {
+            return $distance * 10000;
+        } else {
+            return 0;
+        }
+        
+    }
+
+    public function calculate_total_price($package_id, $quantity)
+    {
+        $package = Package::find($package_id);
+        return $package->price * $quantity;
     }
 }

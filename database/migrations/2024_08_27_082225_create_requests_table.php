@@ -15,15 +15,17 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('id_user');
             $table->unsignedBigInteger('id_mua');
-            $table->unsignedBigInteger('package_id');
             $table->date('date');
             $table->time('start_time');
             $table->time('end_time');
+            $table->decimal('distance', 10, 7);
+            $table->string('visit_type');
+            $table->integer('postage')->nullable();
+            $table->integer('total_price');
             $table->string('status')->default('pending');
             $table->timestamps();
             $table->foreign('id_user')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('id_mua')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('package_id')->references('id')->on('packages')->onDelete('cascade');
         });
     }
 

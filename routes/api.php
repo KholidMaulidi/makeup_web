@@ -14,17 +14,25 @@ use App\Http\Controllers\Api\DayOffController;
 use App\Http\Controllers\Api\OffDayController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
-use App\Models\Package;
+use App\Http\Controllers\Api\PackageDetailController;
 
 // Public routes
 Route::post('register', [RegisterController::class, 'register']);
 Route::post('login', [LoginController::class, 'login']);
+
+Route::get('top-mua', [MakeupArtistProfileController::class, 'showTopMua']);
+Route::get('more-mua', [MakeupArtistProfileController::class, 'showMoreMua']);
 
 // Routes for users
 Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(function () {
     // User Profile Route
     Route::get('user/profile', [UserProfileController::class, 'showProfile']);
     Route::post('user/profile', [UserProfileController::class, 'updateProfile']);
+
+    Route::post('user/logout', [LogoutController::class, 'logout']);
+    Route::post('request/preview', [RequestController::class, 'preview']);
+    Route::post('request/create', [RequestController::class, 'create']); 
+
 
     // User create request route
     Route::post('request', [RequestController::class, 'create']);
@@ -64,6 +72,7 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
 
     // Requests Route
     Route::get('mua/requests', [RequestController::class, 'viewAllRequests']);
+    Route::get('mua/requests/{id}', [RequestController::class, 'viewRequest']);
     Route::post('request/{id}/approve', [RequestController::class, 'approve']); // MUA can approve requests
     Route::post('request/{id}/reject', [RequestController::class, 'reject']); // MUA can reject requests
 
@@ -72,6 +81,18 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
 
     // Packages Route
     Route::get('mua/mua-packages', [PackageController::class, 'show_mua_packages']);
+    Route::get('mua/packages', [PackageController::class, 'index']);
+    Route::get('mua/packages/{id}', [PackageController::class, 'show']);
+    Route::post('mua/packages', [PackageController::class, 'store']);
+    Route::put('mua/packages/{id}', [PackageController::class, 'update']);
+    Route::delete('mua/packages/{id}', [PackageController::class, 'destroy']);
+    
+    Route::post('mua/packages/{package_id}/details', [PackageDetailController::class, 'store']);
+    Route::get('mua/packages/{package_id}/details', [PackageDetailController::class, 'showByPackage']);
+    Route::put('mua/packages/{package_id}/details', [PackageDetailController::class, 'update']);
+    Route::delete('mua/packages/details/{id}', [PackageDetailController::class, 'destroy']);
+    
+
     Route::resource('mua/packages', PackageController::class);
 
     // DayOff Route

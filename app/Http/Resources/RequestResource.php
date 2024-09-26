@@ -20,19 +20,24 @@ class RequestResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ],
-            'package' => [
-                'id' => $this->package->id,
-                'name' => $this->package->package_name,
-                'visit_type' => $this->package->visit_type,
-                'price' => $this->package->price,
-            ],
             'mua' => [
                 'id' => $this->mua->id,
                 'name' => $this->mua->name,
             ],
+            'packages' => $this->requestPackages->map(function ($requestPackage) {
+                return [
+                    'id' => $requestPackage->package->id,
+                    'package_name' => $requestPackage->package->package_name,
+                    'quantity' => $requestPackage->quantity,
+                ];
+            }),
             'date' => $this->date->format('Y-m-d'),
             'start_time' => $this->start_time->format('H:i'),
             'end_time' => $this->end_time->format('H:i'),
+            'visit_type' => $this->visit_type,
+            'distance' => $this->distance,
+            'postage' => $this->postage,
+            'total_price' => $this->total_price,
             'status' => $this->status,
             // 'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             // 'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),

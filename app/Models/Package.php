@@ -13,7 +13,7 @@ class Package extends Model
 
     protected $fillable = [
         'package_name',
-        'visit_type',
+        'description',
         'price',
         'mua_id'
     
@@ -24,8 +24,13 @@ class Package extends Model
         return $this->belongsTo(User::class, 'mua_id');
     }
 
-    public function request()
+    public function details()
     {
-        return $this->hasMany(Request::class, 'package_id');
+        return $this->hasMany(PackageDetail::class, 'package_id');
+    }
+
+    public function requestPackages()
+    {
+        return $this->hasMany(RequestPackage::class, 'package_id');
     }
 }

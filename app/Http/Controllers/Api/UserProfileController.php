@@ -27,6 +27,7 @@ class UserProfileController extends Controller
         $user = Auth::user();
 
         $data = $request->validate([
+            'name' => 'nullable|string|max:255',
             'gender' => 'nullable|in:male,female',
             'address' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
@@ -35,6 +36,11 @@ class UserProfileController extends Controller
             'postal_code' => 'nullable|string|max:10',
             'no_hp' => 'nullable|string|max:15',
         ]);
+
+        if (isset($data['name'])) {
+            $user->update(['name' => $data['name']]);
+            unset($data['name']); // Hapus nama dari data profil agar tidak ikut tersimpan di tabel profileuser
+        }
 
         $profile = $user->userProfile()->updateOrCreate(
             ['user_id' => $user->id],
