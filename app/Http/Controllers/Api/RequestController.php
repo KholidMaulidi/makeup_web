@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use Carbon\Carbon;
 use App\Models\User;
+use App\Models\DayOff;
+use App\Http\Resources\RequestResource;
 use App\Models\Package;
 use App\Models\Request;
 use App\Models\RequestPackage;
@@ -129,6 +131,25 @@ class RequestController extends Controller
                 ->where('date', $date->format('Y-m-d'))
                 ->where('status', 'approved')
                 ->exists();
+        $dayOff = DayOff::where('id_mua', $id_mua)
+        ->whereDate('date', $date)
+        ->exists();
+
+        if ($dayOff) {
+            return response()->json([
+                'message' => 'The selected date is a day off for this MUA. Please choose another date.'
+            ], 400);
+        }
+
+        $newRequest = Request::create([
+            'id_user' => Auth::id(),
+            'id_mua' => $id_mua,
+            'date' => $date->format('Y-m-d'),
+            'start_time' => $startTime->format('H:i'),
+            'end_time' => $endTime->format('H:i'),
+            'package_id' => $validatedData['package_id'],
+            'status' => 'pending',
+        ]);
 
             if ($existingApprovedRequest) {
                 return response()->json([

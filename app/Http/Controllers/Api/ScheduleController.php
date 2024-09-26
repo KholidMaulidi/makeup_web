@@ -13,13 +13,15 @@ use Carbon\Carbon;
 
 class ScheduleController extends Controller
 {
+
+    // add day liburr
     public function getSchedules()
     {
         $muaId = Auth::id();
 
         $schedules = UserRequest::where('id_mua', $muaId)
             ->where('status', 'approved')
-            ->paginate(1);
+            ->paginate(3);
 
         if ($schedules->isEmpty()) {
             return response()->json([
@@ -32,22 +34,39 @@ class ScheduleController extends Controller
             ]);
     }
 
-    public function getMuaSchedules($id_mua)
-    {
+    public function getMuaSchedules(Request $request, $id_mua)
+{
+    // Validasi parameter `filtereddate` jika diberikan
+    $validatedData = $request->validate([
+        'filteredDate' => 'nullable|date'
+    ]);
+
+    // Cek apakah `filteredDate` diberikan dan valid
+    if (isset($validatedData['filteredDate'])) {
+        $date = Carbon::parse($validatedData['filteredDate']);
         $schedules = UserRequest::where('id_mua', $id_mua)
             ->where('status', 'approved')
-            ->paginate(1);
-
-        if ($schedules->isEmpty()) {
-            return response()->json([
-                'message' => 'No schedules available for this MUA',
-            ], 200);
-        }
-
-        return response()->json([
-            'schedules' => ScheduleMuaResource::collection($schedules)
-        ]);
+            ->whereDate('date', $date)
+            ->paginate(5);
+    } else {
+        // Jika tidak ada `filteredDate`, ambil semua jadwal yang disetujui
+        $schedules = UserRequest::where('id_mua', $id_mua)
+            ->where('status', 'approved')
+            ->paginate(5);
     }
+
+    if ($schedules->isEmpty()) {
+        return response()->json([
+            'message' => 'No schedules available for this MUA',
+        ], 200);
+    }
+
+    return response()->json([
+        'last_page' => $schedules->lastPage(),
+        'schedules' => ScheduleMuaResource::collection($schedules)
+    ]);
+}
+
 
     public function filteredSchedules(HttpRequest $request, $id_mua)
     {
@@ -58,7 +77,7 @@ class ScheduleController extends Controller
         $schedules = UserRequest::where('id_mua', $id_mua)
             ->where('status', 'approved')
             ->whereDate('date', $date)
-            ->paginate(1);
+            ->paginate(5);
 
         if ($schedules->isEmpty()) {
             return response()->json([
@@ -67,6 +86,7 @@ class ScheduleController extends Controller
         }
 
         return response()->json([
+            'last_page' => $schedules->lastPage(),
             'schedules' => ScheduleMuaResource::collection($schedules)
         ]);
     }
