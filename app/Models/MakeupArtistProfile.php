@@ -19,6 +19,8 @@ class MakeupArtistProfile extends Model
         'postal_code',
         'no_hp',
         'description',
+        'latitude',
+        'longitude',
     ];
 
     public function user(){

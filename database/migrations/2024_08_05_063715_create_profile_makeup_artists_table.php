@@ -23,6 +23,9 @@ return new class extends Migration
             $table->string('postal_code')->nullable();
             $table->string('no_hp')->nullable();
             $table->string('description')->nullable();
+
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->timestamps();
         });
     }

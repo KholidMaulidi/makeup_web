@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Models\Package;
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
+use App\Models\PackageDetail;
 use App\Traits\JsonResponseTrait;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\PackageResource;
 
@@ -39,6 +40,25 @@ class PackageDetailController extends Controller
                 new PackageResource($package->load('details')),
                 'Package details created successfully',
                 201
+            );
+        } catch (\Throwable $th) {
+            return $this->errorResponse($th->getMessage(), [], 500);
+        }
+    }
+
+    public function showByPackage($package_id)
+    {
+        try {
+            $package = Package::find($package_id);
+
+            if (!$package) {
+                return $this->errorResponse('Package not found', [], 404);
+            }
+
+            return $this->successResponse(
+                new PackageResource($package->load('details')),
+                'Package details retrieved successfully',
+                200
             );
         } catch (\Throwable $th) {
             return $this->errorResponse($th->getMessage(), [], 500);
@@ -87,13 +107,22 @@ class PackageDetailController extends Controller
     }
 
 
-    public function destroy($id)
+   public function destroy($id)
     {
         try {
-            $package = Package::find($id);
-            $package->delete();
+            $packageDetail = PackageDetail::find($id);
 
-            return $this->successResponse([], 'Package deleted successfully', 200);
+            if (!$packageDetail) {
+                return $this->errorResponse('Detail not found', [], 404);
+            }
+
+            $packageDetail->delete();
+
+            return $this->successResponse(
+                [],
+                'Package Detail deleted successfully',
+                200
+            );
         } catch (\Throwable $th) {
             return $this->errorResponse($th->getMessage(), [], 500);
         }

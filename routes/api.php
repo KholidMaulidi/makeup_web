@@ -17,12 +17,16 @@ use App\Http\Controllers\Api\PackageDetailController;
 Route::post('register', [RegisterController::class, 'register']);
 Route::post('login', [LoginController::class, 'login']);
 
+Route::get('top-mua', [MakeupArtistProfileController::class, 'showTopMua']);
+Route::get('more-mua', [MakeupArtistProfileController::class, 'showMoreMua']);
+
 // Routes for users
 Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(function () {
     Route::get('user/profile', [UserProfileController::class, 'showProfile']);
     Route::post('user/profile', [UserProfileController::class, 'updateProfile']);
     Route::post('user/logout', [LogoutController::class, 'logout']);
-    Route::post('request', [RequestController::class, 'create']); // User can create a request
+    Route::post('request/preview', [RequestController::class, 'preview']);
+    Route::post('request/create', [RequestController::class, 'create']); 
 
     Route::get('mua/{id_mua}/schedules', [ScheduleController::class, 'getMuaSchedules']);
     Route::get('mua/{id_mua}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
@@ -43,6 +47,7 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::apiResource('mua/galleries', GalleryController::class);
     Route::post('mua/logout', [LogoutController::class, 'logout']);
     Route::get('mua/requests', [RequestController::class, 'viewAllRequests']);
+    Route::get('mua/requests/{id}', [RequestController::class, 'viewRequest']);
     Route::post('request/{id}/approve', [RequestController::class, 'approve']); // MUA can approve requests
     Route::post('request/{id}/reject', [RequestController::class, 'reject']); // MUA can reject requests
 
@@ -55,8 +60,9 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::delete('mua/packages/{id}', [PackageController::class, 'destroy']);
     
     Route::post('mua/packages/{package_id}/details', [PackageDetailController::class, 'store']);
+    Route::get('mua/packages/{package_id}/details', [PackageDetailController::class, 'showByPackage']);
     Route::put('mua/packages/{package_id}/details', [PackageDetailController::class, 'update']);
-    Route::delete('mua/packages/{package_id}/details', [PackageDetailController::class, 'destroy']);
+    Route::delete('mua/packages/details/{id}', [PackageDetailController::class, 'destroy']);
     
 });
 

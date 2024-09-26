@@ -20,10 +20,13 @@ class Request extends Model
     protected $fillable = [
         'id_user',
         'id_mua',
-        'package_id',
         'date',
         'start_time',
         'end_time',
+        'distance',
+        'visit_type',
+        'postage',
+        'total_price',
         'status',
     ];
 
@@ -37,9 +40,9 @@ class Request extends Model
         return $this->belongsTo(User::class, 'id_mua');
     }
 
-    public function package()
+    public function requestPackages()
     {
-        return $this->belongsTo(Package::class, 'package_id');
+        return $this->hasMany(RequestPackage::class, 'request_id');
     }
 }
 
