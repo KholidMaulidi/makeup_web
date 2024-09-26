@@ -12,7 +12,6 @@ use App\Models\RequestPackage;
 use App\Traits\JsonResponseTrait;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Resources\RequestResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request as HttpRequest;
 
@@ -23,7 +22,7 @@ class RequestController extends Controller
     public function preview(HttpRequest $request)
     {
         try {
-    
+
             $rules = [
                 'packages' => 'required|array',
                 'packages.*.id' => 'required|exists:packages,id',
@@ -67,7 +66,7 @@ class RequestController extends Controller
                 $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
             }
 
-            
+
             return response()->json([
                 'total_quantity' => $totalQuantity,
                 'total_price' => $totalPrice,
@@ -75,7 +74,6 @@ class RequestController extends Controller
                 'distance' => $distance,
                 'visit_type' => $validatedData['visit_type'],
             ], 200);
-            
         } catch (\Throwable $th) {
             // Tangani error dan kembalikan response dengan pesan error
             return $this->errorResponse($th->getMessage(), [], 500);
@@ -97,16 +95,16 @@ class RequestController extends Controller
                 'visit_type' => 'required|string|in:offsite,onsite',
             ];
 
-            
+
             if ($request->input('visit_type') === 'offsite') {
                 $rules['latitude'] = 'required|numeric';
                 $rules['longitude'] = 'required|numeric';
             }
 
-            
+
             $validator = Validator::make($request->all(), $rules);
 
-            
+
             if ($validator->fails()) {
                 return response()->json([
                     'status' => false,
@@ -115,41 +113,41 @@ class RequestController extends Controller
                 ], 422);
             }
 
-            
+
             $validatedData = $validator->validated();
 
-            
+
             $date = Carbon::parse($validatedData['date']);
             $startTime = Carbon::parse($validatedData['start_time']);
             $endTime = Carbon::parse($validatedData['end_time']);
 
-            
-            $muaId = Package::find($validatedData['packages'][0]['id'])->mua_id;
 
-            
-            $existingApprovedRequest = Request::where('id_mua', $muaId)
+            $id_mua = Package::find($validatedData['packages'][0]['id'])->mua_id;
+
+
+            $existingApprovedRequest = Request::where('id_mua', $id_mua)
                 ->where('date', $date->format('Y-m-d'))
                 ->where('status', 'approved')
                 ->exists();
-        $dayOff = DayOff::where('id_mua', $id_mua)
-        ->whereDate('date', $date)
-        ->exists();
+            $dayOff = DayOff::where('id_mua', $id_mua)
+                ->whereDate('date', $date)
+                ->exists();
 
-        if ($dayOff) {
-            return response()->json([
-                'message' => 'The selected date is a day off for this MUA. Please choose another date.'
-            ], 400);
-        }
+            if ($dayOff) {
+                return response()->json([
+                    'message' => 'The selected date is a day off for this MUA. Please choose another date.'
+                ], 400);
+            }
 
-        $newRequest = Request::create([
-            'id_user' => Auth::id(),
-            'id_mua' => $id_mua,
-            'date' => $date->format('Y-m-d'),
-            'start_time' => $startTime->format('H:i'),
-            'end_time' => $endTime->format('H:i'),
-            'package_id' => $validatedData['package_id'],
-            'status' => 'pending',
-        ]);
+            $newRequest = Request::create([
+                'id_user' => Auth::id(),
+                'id_mua' => $id_mua,
+                'date' => $date->format('Y-m-d'),
+                'start_time' => $startTime->format('H:i'),
+                'end_time' => $endTime->format('H:i'),
+                'package_id' => $validatedData['package_id'],
+                'status' => 'pending',
+            ]);
 
             if ($existingApprovedRequest) {
                 return response()->json([
@@ -157,11 +155,11 @@ class RequestController extends Controller
                 ], 400);
             }
 
-            
+
             $totalQuantity = 0;
             $totalPrice = 0;
 
-            
+
             if ($validatedData['visit_type'] === 'offsite') {
                 $distance = $this->calculate_distance($validatedData['latitude'], $validatedData['longitude'], 'K', $validatedData['packages'][0]['id']);
                 $postage = $this->calculate_postage($distance);
@@ -170,27 +168,27 @@ class RequestController extends Controller
                 $postage = 0;
             }
 
-            
+
             foreach ($validatedData['packages'] as $package) {
                 $totalQuantity += $package['quantity'];
                 $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
             }
 
-            
+
             $newRequest = Request::create([
                 'id_user' => Auth::id(),
-                'id_mua' => $muaId,
+                'id_mua' => $id_mua,
                 'date' => $date->format('Y-m-d'),
                 'start_time' => $startTime->format('H:i'),
                 'end_time' => $endTime->format('H:i'),
                 'postage' => $postage,
                 'total_price' => $totalPrice,
                 'visit_type' => $validatedData['visit_type'],
-                'status' => 'pending', 
+                'status' => 'pending',
                 'distance' => $distance,
             ]);
 
-            
+
             foreach ($validatedData['packages'] as $package) {
                 RequestPackage::create([
                     'request_id' => $newRequest->id,
@@ -199,12 +197,12 @@ class RequestController extends Controller
                 ]);
             }
 
-            
+
             $requestResource = new RequestResource($newRequest);
 
             return response()->json($requestResource, 201);
         } catch (\Throwable $th) {
-            
+
             return $this->errorResponse($th->getMessage(), [], 500);
         }
     }
@@ -288,7 +286,7 @@ class RequestController extends Controller
         return new RequestResource($request);
     }
 
-    
+
 
     public function calculate_distance($lat2, $lon2, $unit, $package_id)
     {
@@ -317,20 +315,19 @@ class RequestController extends Controller
 
             return round($distance, 2);
         }
-    } 
+    }
 
     public function calculate_postage($distance)
     {
         if ($distance <= 5) {
             return $distance * 5000;
-        } else if($distance > 5 && $distance <= 10) {
+        } else if ($distance > 5 && $distance <= 10) {
             return $distance * 7000;
-        } else if($distance > 10) {
+        } else if ($distance > 10) {
             return $distance * 10000;
         } else {
             return 0;
         }
-        
     }
 
     public function calculate_total_price($package_id, $quantity)
