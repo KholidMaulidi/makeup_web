@@ -23,6 +23,7 @@ class RequestController extends Controller
     public function show(HttpRequest $request)
     {
         try {
+
             $rules = [
                 'packages' => 'required|array',
                 'packages.*.id' => 'required|exists:packages,id',
@@ -50,12 +51,6 @@ class RequestController extends Controller
 
             $validatedData = $validator->validated();
 
-            // Parsing date and times
-            $date = Carbon::parse($validatedData['date']);
-            $startTime = Carbon::parse($validatedData['start_time']);
-            $endTime = Carbon::parse($validatedData['end_time']);
-
-            // Calculate total price and distance
             $totalQuantity = 0;
             $totalPrice = 0;
 
@@ -72,22 +67,12 @@ class RequestController extends Controller
                 $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
             }
 
-            // Prepare preview data
-            $previewData = [
+            return response()->json([
                 'total_quantity' => $totalQuantity,
                 'total_price' => $totalPrice,
                 'postage' => $postage,
                 'distance' => $distance,
                 'visit_type' => $validatedData['visit_type'],
-                'date' => $date->format('Y-m-d'),
-                'start_time' => $startTime->format('H:i'),
-                'end_time' => $endTime->format('H:i'),
-            ];
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Preview data retrieved successfully.',
-                'data' => $previewData,
             ], 200);
         } catch (\Throwable $th) {
             return $this->errorResponse($th->getMessage(), [], 500);

@@ -94,8 +94,8 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
 
     // Package Details Route
     Route::get('mua/packages-details', [PackageDetailController::class, 'index']);
-    Route::get('mua/packages-details/{id}', [PackageDetailController::class, 'show']);
-    Route::post('mua/packages-details', [PackageDetailController::class, 'store']);
+    // Route::get('mua/packages-details/{id}', [PackageDetailController::class, 'show']);
+    Route::post('mua/packages-details/{package_id}', [PackageDetailController::class, 'store']);
     Route::put('mua/packages-details/{id}', [PackageDetailController::class, 'update']);
     Route::delete('mua/packages-details/{id}', [PackageDetailController::class, 'destroy']);
     

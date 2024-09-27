@@ -15,6 +15,22 @@ class PackageDetailController extends Controller
 {
     use JsonResponseTrait;
 
+    public function index()
+    {
+        try {
+            $id = Auth::id();
+            $packages = Package::where('mua_id', $id)->get();
+
+            if ($packages->isEmpty()) {
+                return $this->successResponse([], 'No packages available', 200);
+            }
+
+            return $this->successResponse(PackageResource::collection($packages), 'Get Packages successfully', 200);
+        } catch (\Throwable $th) {
+            return $this->errorResponse($th->getMessage(), [], 500);
+        }
+    }
+
     public function store(Request $request, $package_id)
     {
         try {
