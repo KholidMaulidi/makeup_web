@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\MakeupArtistProfileController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\RequestController;
+use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\DayOffController;
 use App\Http\Controllers\Api\OffDayController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,10 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
     // User History
     Route::get('user/history', [HistoryRequestController::class, 'userHistory']);
     Route::get('user/history/test', [HistoryRequestController::class, 'testMoveToHistory']);
+
+    // User Transactions
+    Route::get('user/transactions', [TransactionController::class, 'showUserTransactions']);
+    Route::post('/transactions/{transactionId}/upload-payment-proof', [TransactionController::class, 'uploadPaymentProof']);
 
     // User Logout Route
     Route::post('user/logout', [LogoutController::class, 'logout']);

@@ -8,6 +8,7 @@ use App\Models\DayOff;
 use App\Http\Resources\RequestResource;
 use App\Models\Package;
 use App\Models\Request;
+use App\Models\Transaction;
 use App\Models\RequestPackage;
 use App\Traits\JsonResponseTrait;
 use App\Http\Controllers\Controller;
@@ -241,8 +242,14 @@ class RequestController extends Controller
 
         $requestToApprove->update(['status' => 'approved']);
 
+        Transaction::create([
+            'request_id' => $requestToApprove->id,
+            'payment_status' => 'unpaid'
+        ]);
+
         return new RequestResource($requestToApprove);
     }
+
 
     public function reject($id)
     {

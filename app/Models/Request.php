@@ -44,5 +44,10 @@ class Request extends Model
     {
         return $this->hasMany(RequestPackage::class, 'request_id');
     }
+
+    public function transaction()
+    {
+        return $this->hasOne(Transaction::class);
+    }
 }
 
