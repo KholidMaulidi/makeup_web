@@ -30,8 +30,8 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
     Route::post('user/profile', [UserProfileController::class, 'updateProfile']);
 
     Route::post('user/logout', [LogoutController::class, 'logout']);
-    Route::post('request/preview', [RequestController::class, 'preview']);
-    Route::post('request/create', [RequestController::class, 'create']); 
+    Route::post('request/show', [RequestController::class, 'show']);
+    Route::post('request/store', [RequestController::class, 'create']); 
 
 
     // User create request route
@@ -86,11 +86,13 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::post('mua/packages', [PackageController::class, 'store']);
     Route::put('mua/packages/{id}', [PackageController::class, 'update']);
     Route::delete('mua/packages/{id}', [PackageController::class, 'destroy']);
-    
-    Route::post('mua/packages/{package_id}/details', [PackageDetailController::class, 'store']);
-    Route::get('mua/packages/{package_id}/details', [PackageDetailController::class, 'showByPackage']);
-    Route::put('mua/packages/{package_id}/details', [PackageDetailController::class, 'update']);
-    Route::delete('mua/packages/details/{id}', [PackageDetailController::class, 'destroy']);
+
+    // Package Details Route
+    Route::get('mua/packages-details', [PackageDetailController::class, 'index']);
+    Route::get('mua/packages-details/{id}', [PackageDetailController::class, 'show']);
+    Route::post('mua/packages-details', [PackageDetailController::class, 'store']);
+    Route::put('mua/packages-details/{id}', [PackageDetailController::class, 'update']);
+    Route::delete('mua/packages-details/{id}', [PackageDetailController::class, 'destroy']);
     
 
     Route::resource('mua/packages', PackageController::class);

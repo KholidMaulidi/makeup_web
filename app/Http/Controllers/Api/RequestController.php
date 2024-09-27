@@ -19,10 +19,9 @@ class RequestController extends Controller
 {
     use JsonResponseTrait;
 
-    public function preview(HttpRequest $request)
+    public function show(HttpRequest $request)
     {
         try {
-
             $rules = [
                 'packages' => 'required|array',
                 'packages.*.id' => 'required|exists:packages,id',
@@ -50,6 +49,12 @@ class RequestController extends Controller
 
             $validatedData = $validator->validated();
 
+            // Parsing date and times
+            $date = Carbon::parse($validatedData['date']);
+            $startTime = Carbon::parse($validatedData['start_time']);
+            $endTime = Carbon::parse($validatedData['end_time']);
+
+            // Calculate total price and distance
             $totalQuantity = 0;
             $totalPrice = 0;
 
@@ -66,25 +71,34 @@ class RequestController extends Controller
                 $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
             }
 
-
-            return response()->json([
+            // Prepare preview data
+            $previewData = [
                 'total_quantity' => $totalQuantity,
                 'total_price' => $totalPrice,
                 'postage' => $postage,
                 'distance' => $distance,
                 'visit_type' => $validatedData['visit_type'],
+                'date' => $date->format('Y-m-d'),
+                'start_time' => $startTime->format('H:i'),
+                'end_time' => $endTime->format('H:i'),
+            ];
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Preview data retrieved successfully.',
+                'data' => $previewData,
             ], 200);
         } catch (\Throwable $th) {
-            // Tangani error dan kembalikan response dengan pesan error
             return $this->errorResponse($th->getMessage(), [], 500);
         }
     }
 
 
+
+
     public function create(HttpRequest $request)
     {
         try {
-            //
             $rules = [
                 'packages' => 'required|array',
                 'packages.*.id' => 'required|exists:packages,id',
@@ -95,15 +109,12 @@ class RequestController extends Controller
                 'visit_type' => 'required|string|in:offsite,onsite',
             ];
 
-
             if ($request->input('visit_type') === 'offsite') {
                 $rules['latitude'] = 'required|numeric';
                 $rules['longitude'] = 'required|numeric';
             }
 
-
             $validator = Validator::make($request->all(), $rules);
-
 
             if ($validator->fails()) {
                 return response()->json([
@@ -113,18 +124,15 @@ class RequestController extends Controller
                 ], 422);
             }
 
-
             $validatedData = $validator->validated();
-
 
             $date = Carbon::parse($validatedData['date']);
             $startTime = Carbon::parse($validatedData['start_time']);
             $endTime = Carbon::parse($validatedData['end_time']);
 
-
             $id_mua = Package::find($validatedData['packages'][0]['id'])->mua_id;
 
-
+            // Check for existing approved request and day off
             $existingApprovedRequest = Request::where('id_mua', $id_mua)
                 ->where('date', $date->format('Y-m-d'))
                 ->where('status', 'approved')
@@ -133,32 +141,21 @@ class RequestController extends Controller
                 ->whereDate('date', $date)
                 ->exists();
 
-            if ($dayOff) {
-                return response()->json([
-                    'message' => 'The selected date is a day off for this MUA. Please choose another date.'
-                ], 400);
-            }
-
-            $newRequest = Request::create([
-                'id_user' => Auth::id(),
-                'id_mua' => $id_mua,
-                'date' => $date->format('Y-m-d'),
-                'start_time' => $startTime->format('H:i'),
-                'end_time' => $endTime->format('H:i'),
-                'package_id' => $validatedData['package_id'],
-                'status' => 'pending',
-            ]);
-
             if ($existingApprovedRequest) {
                 return response()->json([
                     'message' => 'The MUA is already booked for the selected date.'
                 ], 400);
             }
 
+            if ($dayOff) {
+                return response()->json([
+                    'message' => 'The selected date is a day off for this MUA. Please choose another date.'
+                ], 400);
+            }
 
+            // Calculate total price and distance
             $totalQuantity = 0;
             $totalPrice = 0;
-
 
             if ($validatedData['visit_type'] === 'offsite') {
                 $distance = $this->calculate_distance($validatedData['latitude'], $validatedData['longitude'], 'K', $validatedData['packages'][0]['id']);
@@ -168,13 +165,12 @@ class RequestController extends Controller
                 $postage = 0;
             }
 
-
             foreach ($validatedData['packages'] as $package) {
                 $totalQuantity += $package['quantity'];
                 $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
             }
 
-
+            // Create the request
             $newRequest = Request::create([
                 'id_user' => Auth::id(),
                 'id_mua' => $id_mua,
@@ -188,7 +184,7 @@ class RequestController extends Controller
                 'distance' => $distance,
             ]);
 
-
+            // Create request packages
             foreach ($validatedData['packages'] as $package) {
                 RequestPackage::create([
                     'request_id' => $newRequest->id,
@@ -197,15 +193,14 @@ class RequestController extends Controller
                 ]);
             }
 
-
             $requestResource = new RequestResource($newRequest);
 
             return response()->json($requestResource, 201);
         } catch (\Throwable $th) {
-
             return $this->errorResponse($th->getMessage(), [], 500);
         }
     }
+
 
 
     public function approve($id)
