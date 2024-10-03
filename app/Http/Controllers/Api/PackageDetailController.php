@@ -19,41 +19,45 @@ class PackageDetailController extends Controller
     {
         try {
             $id = Auth::id();
-            $packages = Package::where('mua_id', $id)->get();
+            $packages = PackageDetail::where('mua_id', $id)->get();
 
             if ($packages->isEmpty()) {
-                return $this->successResponse([], 'No packages available', 200);
+                return $this->successResponse([], 'No package details available', 200);
             }
 
-            return $this->successResponse(PackageResource::collection($packages), 'Get Packages successfully', 200);
+            return $this->successResponse(
+                $packages, 'Get Package details successfully', 200);
+            
         } catch (\Throwable $th) {
             return $this->errorResponse($th->getMessage(), [], 500);
         }
     }
 
-    public function store(Request $request, $package_id)
+    public function store(Request $request)
     {
         try {
+            $mua_id = Auth::id();
+
+            // Validasi input sebagai array
             $data = $request->validate([
-                'details' => 'required|array',
-                'details.*.item_name' => 'required|string',
-                'details.*.description' => 'required|string',
+                '*.item_name' => 'required|string',
+                '*.description' => 'required|string',
             ]);
 
-            $package = Package::find($package_id);
+            // Menyimpan banyak data
+            $packageDetails = [];
+            foreach ($data as $detail) {
+                $packageDetail = new PackageDetail;
+                $packageDetail->mua_id = $mua_id;
+                $packageDetail->item_name = $detail['item_name'];
+                $packageDetail->description = $detail['description'];
+                $packageDetail->save();
 
-            if (!$package) {
-                return $this->errorResponse('Package not found', [], 404);
-            }
-
-            $details = $data['details'];
-
-            foreach ($details as $detail) {
-                $package->details()->create($detail);
+                $packageDetails[] = $packageDetail;
             }
 
             return $this->successResponse(
-                new PackageResource($package->load('details')),
+                $packageDetails,
                 'Package details created successfully',
                 201
             );
@@ -62,74 +66,68 @@ class PackageDetailController extends Controller
         }
     }
 
-    public function showByPackage($package_id)
-    {
-        try {
-            $package = Package::find($package_id);
 
-            if (!$package) {
-                return $this->errorResponse('Package not found', [], 404);
-            }
-
-            return $this->successResponse(
-                new PackageResource($package->load('details')),
-                'Package details retrieved successfully',
-                200
-            );
-        } catch (\Throwable $th) {
-            return $this->errorResponse($th->getMessage(), [], 500);
-        }
-    }
-
-    public function update(Request $request, $package_id)
-    {
-        try {
-            $data = $request->validate([
-                'details' => 'required|array',
-                'details.*.id' => 'required|exists:package_details,id',
-                'details.*.item_name' => 'required|string',
-                'details.*.description' => 'required|string',
-            ]);
-
-            $package = Package::find($package_id);
-
-            if (!$package) {
-                return $this->errorResponse('Package not found', [], 404);
-            }
-
-            $details = $data['details'];
-
-            foreach ($details as $detail) {
-                $packageDetail = $package->details()->find($detail['id']);
-
-                if ($packageDetail) {
-                    $packageDetail->update([
-                        'item_name' => $detail['item_name'],
-                        'description' => $detail['description'],
-                    ]);
-                } else {
-                    return $this->errorResponse('Detail not found', [], 404);
-                }
-            }
-
-            return $this->successResponse(
-                new PackageResource($package->load('details')),
-                'Package Details Updated successfully',
-                201
-            );
-        } catch (\Throwable $th) {
-            return $this->errorResponse($th->getMessage(), [], 500);
-        }
-    }
-
-
-   public function destroy($id)
+    public function show($id)
     {
         try {
             $packageDetail = PackageDetail::find($id);
 
             if (!$packageDetail) {
                 return $this->errorResponse('Detail not found', [], 404);
+            }
+
+            return $this->successResponse(
+                $packageDetail,
+                'Get Package detail successfully',
+                200
+            );
+        } catch (\Throwable $th) {
+            return $this->errorResponse($th->getMessage(), [], 500);
+        }
+    }
+    public function update(Request $request, $id)
+    {
+        try {
+
+            $mua_id = Auth::id();
+            $data = $request->validate([
+                'item_name' => 'required|string',
+                'description' => 'required|string',
+            ]);
+
+            $detail = PackageDetail::findOrFail($id);
+
+            if ($detail->mua_id !== $mua_id) {
+                return $this->errorResponse('Unauthorized', [], 401);
+            }
+
+            $detail->item_name = $data['item_name'];
+            $detail->description = $data['description'];
+            $detail->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Package detail updated successfully',
+                'data' => $detail
+            ], 200);
+        } catch (\Throwable $th) {
+            return $this->errorResponse($th->getMessage(), [], 500);
+        }
+    }
+
+
+
+    public function destroy($id)
+    {
+        try {
+            $mua_id = Auth::id();
+            $packageDetail = PackageDetail::find($id);
+
+            if (!$packageDetail) {
+                return $this->errorResponse('Detail not found', [], 404);
+            }
+            if ($packageDetail->mua_id !== $mua_id) {
+                return $this->errorResponse('Unauthorized', [], 401);
             }
 
             $packageDetail->delete();
