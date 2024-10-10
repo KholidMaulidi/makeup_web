@@ -23,7 +23,6 @@ class RequestController extends Controller
     public function show(HttpRequest $request)
     {
         try {
-
             $rules = [
                 'packages' => 'required|array',
                 'packages.*.id' => 'required|exists:packages,id',
@@ -53,6 +52,7 @@ class RequestController extends Controller
 
             $totalQuantity = 0;
             $totalPrice = 0;
+            $packageDetails = [];
 
             if ($validatedData['visit_type'] === 'offsite') {
                 $distance = $this->calculate_distance($validatedData['latitude'], $validatedData['longitude'], 'K', $validatedData['packages'][0]['id']);
@@ -63,21 +63,41 @@ class RequestController extends Controller
             }
 
             foreach ($validatedData['packages'] as $package) {
+                
+                $packageData = Package::find($package['id']);
+                $initialPrice = $packageData->price;
+
+                $totalPerPackage = $initialPrice * $package['quantity'];
+
+                $packageDetails[] = [
+                    'package_id' => $package['id'],
+                    'package_name' => $packageData->package_name,
+                    'initial_price' => $initialPrice,
+                    'quantity' => $package['quantity'],
+                    'total_per_package' => $totalPerPackage
+                ];
+
                 $totalQuantity += $package['quantity'];
-                $totalPrice += $this->calculate_total_price($package['id'], $package['quantity']);
+                $totalPrice += $totalPerPackage;
             }
 
             return response()->json([
-                'total_quantity' => $totalQuantity,
-                'total_price' => $totalPrice,
-                'postage' => $postage,
-                'distance' => $distance,
-                'visit_type' => $validatedData['visit_type'],
-            ], 200);
+                'status' => true,
+                'message' => 'Get request details success',
+                'data' =>[
+                    'packages' => $packageDetails,
+                    'total_quantity' => $totalQuantity,
+                    'total_price' => $totalPrice,
+                    'postage' => $postage,
+                    'distance' => $distance,
+                    'visit_type' => $validatedData['visit_type'],
+                ]
+            ],200);
         } catch (\Throwable $th) {
             return $this->errorResponse($th->getMessage(), [], 500);
         }
     }
+
 
 
 

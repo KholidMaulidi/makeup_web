@@ -11,14 +11,13 @@ class PackageDetail extends Model
 
     protected $table = 'package_details';
     protected $fillable = [
-        'package_id',
         'item_name',
         'description'
     ];
 
 
-    public function package()
+    public function packages()
     {
-        return $this->belongsTo(Package::class, 'package_id');
+        return $this->belongsToMany(Package::class, 'package_detail_packages');
     }
 }

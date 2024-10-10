@@ -24,6 +24,9 @@ Route::post('login', [LoginController::class, 'login']);
 Route::get('top-mua', [MakeupArtistProfileController::class, 'showTopMua']);
 Route::get('more-mua', [MakeupArtistProfileController::class, 'showMoreMua']);
 
+// User see packages route
+Route::get('mua/{id_mua}/packages', [PackageController::class, 'show_mua_packages']);
+Route::get('make-up-artist/{id}', [MakeupArtistProfileController::class, 'showMuaProfile']);
 // Routes for users
 Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(function () {
     // User Profile Route
@@ -42,8 +45,6 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
     Route::get('mua/{id_mua}/schedules', [ScheduleController::class, 'getMuaSchedules']);
     Route::get('mua/{id_mua}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
     
-    // User see packages route
-    Route::get('mua/{id_mua}/packages', [PackageController::class, 'show_mua_packages']);
 
     // User History
     Route::get('user/history', [HistoryRequestController::class, 'userHistory']);
@@ -94,11 +95,12 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
     Route::post('mua/packages', [PackageController::class, 'store']);
     Route::put('mua/packages/{id}', [PackageController::class, 'update']);
     Route::delete('mua/packages/{id}', [PackageController::class, 'destroy']);
+    Route::post('mua/packages/{id}/image', [PackageController::class, 'uploadImage']);
 
     // Package Details Route
     Route::get('mua/packages-details', [PackageDetailController::class, 'index']);
-    // Route::get('mua/packages-details/{id}', [PackageDetailController::class, 'show']);
-    Route::post('mua/packages-details/{package_id}', [PackageDetailController::class, 'store']);
+    Route::get('mua/packages-details/{id}', [PackageDetailController::class, 'show']);
+    Route::post('mua/packages-details', [PackageDetailController::class, 'store']);
     Route::put('mua/packages-details/{id}', [PackageDetailController::class, 'update']);
     Route::delete('mua/packages-details/{id}', [PackageDetailController::class, 'destroy']);
     
