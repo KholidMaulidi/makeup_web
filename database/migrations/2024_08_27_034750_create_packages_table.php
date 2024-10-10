@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('mua_id');
             $table->string('package_name');
+            $table->string('image')->nullable();
             $table->text('description')->nullable();
             $table->integer('price');
             $table->foreign('mua_id')->references('id')->on('users')->onDelete('cascade');

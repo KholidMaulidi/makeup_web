@@ -13,6 +13,7 @@ class Package extends Model
 
     protected $fillable = [
         'package_name',
+        'iamge',
         'description',
         'price',
         'mua_id'
