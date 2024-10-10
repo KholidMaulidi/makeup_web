@@ -77,4 +77,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(DayOff::class, 'id_mua');
     }
+
+    public function paymentMethod(){
+        return $this->hasMany(PaymentMethod::class, 'mua_id');
+    }
 }

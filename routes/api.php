@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\MakeupArtistProfileController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\TransactionController;
-use App\Http\Controllers\Api\DayOffController;
+use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\OffDayController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
@@ -52,7 +52,10 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
 
     // User Transactions
     Route::get('user/transactions', [TransactionController::class, 'showUserTransactions']);
-    Route::post('/transactions/{transactionId}/upload-payment-proof', [TransactionController::class, 'uploadPaymentProof']);
+    Route::post('user/transactions/{transactionId}/upload-payment-proof', [TransactionController::class, 'uploadPaymentProof']);
+
+    // User Payment Method
+    Route::get('user/payment-methods/transaction/{transaction_id}/type/{type_id}', [PaymentMethodController::class, 'showPaymentMethodsByType']);
 
     // User Logout Route
     Route::post('user/logout', [LogoutController::class, 'logout']);
@@ -112,9 +115,27 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(functio
 
     // MUA History
     Route::get('mua/history', [HistoryRequestController::class, 'muaHistory']);
+
+    // MUA Transactions
+    Route::post('/mua/transactions/confirm-payment/{id}', [TransactionController::class, 'confirmPayment']);
+    Route::get('/mua/transactions', [TransactionController::class, 'showTransactionsByMUA']);
+
+    // MUA Payment Method
+    Route::get('mua/payment-methods', [PaymentMethodController::class, 'getAllPaymentMethods']);
+    Route::post('mua/payment-methods', [PaymentMethodController::class, 'createPaymentMethod']);
+    Route::put('mua/payment-methods/{id}', [PaymentMethodController::class, 'updatePaymentMethod']);
+    Route::delete('mua/payment-methods/{id}', [PaymentMethodController::class, 'deletePaymentMethod']);
+    Route::put('/payment-method/{id}/status', [PaymentMethodController::class, 'updatePaymentMethodStatus']);
+
+    // MUA Off Day Route
+    Route::get('mua/off-days', [OffDayController::class, 'getAllOffDays']);
+    Route::post('mua/off-day', [OffDayController::class, 'setOffDay']);
+    Route::put('mua/off-day/{id}', [OffDayController::class, 'editOffDay']);
+    Route::delete('mua/off-day/{id}', [OffDayController::class, 'deleteOffDay']);
     
     // MUA Logout Route
     Route::post('mua/logout', [LogoutController::class, 'logout']);
+
 });
 
 
