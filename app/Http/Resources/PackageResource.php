@@ -21,11 +21,14 @@ class PackageResource extends JsonResource
             'image' => $this->image ? url('storage/images/packages/' . $this->image) : null,
             'description' => $this->description,
             'price' => $this->price,
+            'service' => [
+                'id' => $this->service->id,
+                'service_name' => $this->service->service_name, 
+            ],
             'details' => $this->details->map(function ($detail) {
                 return [
                     'id' => $detail->id,
                     'item_name' => $detail->item_name,
-                    'description' => $detail->description,
                 ];
             }),
         ];

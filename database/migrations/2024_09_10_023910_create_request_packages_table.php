@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('request_id');
             $table->unsignedBigInteger('package_id');
+            $table->json('package_details');
             $table->unsignedInteger('quantity');
             $table->foreign('request_id')->references('id')->on('requests')->onDelete('cascade');
             $table->foreign('package_id')->references('id')->on('packages')->onDelete('cascade');

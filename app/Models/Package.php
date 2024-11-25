@@ -16,7 +16,8 @@ class Package extends Model
         'iamge',
         'description',
         'price',
-        'mua_id'
+        'mua_id',
+        'service_id',
     
     ];
 
@@ -27,11 +28,16 @@ class Package extends Model
 
     public function details()
     {
-        return $this->belongsToMany(PackageDetail::class, 'package_detail_packages');
+        return $this->hasMany(PackageDetail::class, 'package_id');
     }
 
     public function requestPackages()
     {
         return $this->hasMany(RequestPackage::class, 'package_id');
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'service_id');
     }
 }

@@ -15,6 +15,7 @@ class RequestPackage extends Model
         'request_id',
         'package_id',
         'quantity',
+        'package_details',
     ];
 
     public function request()

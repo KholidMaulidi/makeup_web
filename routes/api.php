@@ -1,21 +1,26 @@
 <?php
 
-use App\Http\Controllers\Api\Auth\LoginController;
-use App\Http\Controllers\Api\Auth\RegisterController;
-use App\Http\Controllers\Api\Auth\LogoutController;
-use App\Http\Controllers\Api\HistoryRequestController;
-use App\Http\Controllers\Api\UserProfileController;
-use App\Http\Controllers\Api\GalleryController;
-use App\Http\Controllers\Api\ScheduleController;
-use App\Http\Controllers\Api\MakeupArtistProfileController;
-use App\Http\Controllers\Api\PackageController;
-use App\Http\Controllers\Api\RequestController;
-use App\Http\Controllers\Api\TransactionController;
-use App\Http\Controllers\Api\PaymentMethodController;
-use App\Http\Controllers\Api\OffDayController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\OffDayController;
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\GalleryController;
+use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\RequestController;
+use App\Http\Controllers\Api\ScheduleController;
+use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\LogoutController;
+use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\PackageDetailController;
+use App\Http\Controllers\Api\PaymentMethodController;
+use App\Http\Controllers\Api\HistoryRequestController;
+use App\Http\Controllers\Api\HistoryTransactionController;
+use App\Http\Controllers\Api\MakeupArtistProfileController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Models\Service;
 
 // Public routes
 Route::post('register', [RegisterController::class, 'register']);
@@ -23,119 +28,125 @@ Route::post('login', [LoginController::class, 'login']);
 
 Route::get('top-mua', [MakeupArtistProfileController::class, 'showTopMua']);
 Route::get('more-mua', [MakeupArtistProfileController::class, 'showMoreMua']);
-
-// User see packages route
 Route::get('mua/{id_mua}/packages', [PackageController::class, 'show_mua_packages']);
+Route::get('mua/{id}/reviews', [ReviewController::class, 'showByMua']);
+Route::get('mua/all-galleries', [GalleryController::class, 'show_gallery_user']);
 Route::get('make-up-artist/{id}', [MakeupArtistProfileController::class, 'showMuaProfile']);
+Route::get('services',[ServiceController::class, 'index']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('upload-avatar', [UserController::class, 'updateAvatar']);
+});
+
 // Routes for users
 Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(function () {
-    // User Profile Route
-    Route::get('user/profile', [UserProfileController::class, 'showProfile']);
-    Route::post('user/profile', [UserProfileController::class, 'updateProfile']);
-
-    Route::post('user/logout', [LogoutController::class, 'logout']);
+    Route::prefix('requests')->group(function () {
+        Route::get('profile', [UserProfileController::class, 'showProfile']);
+        Route::post('profile', [UserProfileController::class, 'updateProfile']);
+    });
+    Route::post('logout', [LogoutController::class, 'logout']);
     Route::post('request/show', [RequestController::class, 'show']);
-    Route::post('request/store', [RequestController::class, 'create']); 
+    Route::post('request/store', [RequestController::class, 'create']);
 
+    Route::prefix('review')->group(function () {
+        Route::post('{mua_id}', [ReviewController::class, 'store']);
+        Route::put('{id}', [ReviewController::class, 'update']);
+        Route::delete('{id}', [ReviewController::class, 'destroy']);
+    });
+    Route::prefix('mua')->group(function () {
+        Route::get('{id}/schedules', [ScheduleController::class, 'getMuaSchedules']);
+        Route::get('{id}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
+    });
 
-    // User create request route
-    Route::post('request', [RequestController::class, 'create']);
-
-    // User see schedules route
-    Route::get('mua/{id_mua}/schedules', [ScheduleController::class, 'getMuaSchedules']);
-    Route::get('mua/{id_mua}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
     
+    Route::prefix('user')->group(function () {
+        Route::get('history', [HistoryRequestController::class, 'userHistory']);
+        Route::get('history/test', [HistoryRequestController::class, 'testMoveToHistory']);
+        Route::post('transaction-cancel/{id}', [TransactionController::class, 'requestCancel']);
+        Route::get('transactions', [TransactionController::class, 'showUserTransactions']);
+        Route::post('transactions/{transactionId}/upload-payment-proof', [TransactionController::class, 'uploadPaymentProof']);
+        Route::get('history-transaction', [HistoryTransactionController::class, 'showByUser']);
+        Route::get('history-transaction/{id}', [HistoryTransactionController::class, 'show']);
+        Route::post('request-cancel/{id}', [RequestController::class, 'requestCancel']);
+    });
 
-    // User History
-    Route::get('user/history', [HistoryRequestController::class, 'userHistory']);
-    Route::get('user/history/test', [HistoryRequestController::class, 'testMoveToHistory']);
-
-    // User Transactions
-    Route::get('user/transactions', [TransactionController::class, 'showUserTransactions']);
-    Route::post('user/transactions/{transactionId}/upload-payment-proof', [TransactionController::class, 'uploadPaymentProof']);
-
-    // User Payment Method
-    Route::get('user/payment-methods/transaction/{transaction_id}/type/{type_id}', [PaymentMethodController::class, 'showPaymentMethodsByType']);
-
-    // User Logout Route
-    Route::post('user/logout', [LogoutController::class, 'logout']);
+    Route::get('payment-methods/transaction/{transaction_id}/type/{type_id}', [PaymentMethodController::class, 'showPaymentMethodsByType']);
 });
 
 // Routes for admins
-Route::middleware(['auth:sanctum', RoleMiddleware::class . ':3'])->group(function () {
-    // Admin Profile Route
-    Route::get('admin/profile', [UserProfileController::class, 'showProfile']);
-
-    // Admin Logout Route
-    Route::post('admin/logout', [LogoutController::class, 'logout']);
+Route::middleware(['auth:sanctum', RoleMiddleware::class . ':3'])->prefix('admin')->group(function () {
+    Route::get('profile', [UserProfileController::class, 'showProfile']);
+    Route::post('logout', [LogoutController::class, 'logout']);
 });
 
 // Routes for MUA
-Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->group(function () {
-    // MUA Profile Route
-    Route::get('mua/profile', [MakeupArtistProfileController::class, 'showProfile']);
-    Route::post('mua/profile', [MakeupArtistProfileController::class, 'updateProfile']);
+Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->prefix('mua')->group(function () {
+    Route::get('profile', [MakeupArtistProfileController::class, 'showProfile']);
+    Route::post('profile', [MakeupArtistProfileController::class, 'updateProfile']);
 
-    // Gallery Route
-    Route::apiResource('mua/galleries', GalleryController::class);
+    Route::apiResource('galleries', GalleryController::class);
 
-    // Requests Route
-    Route::get('mua/requests', [RequestController::class, 'viewAllRequests']);
-    Route::get('mua/requests/{id}', [RequestController::class, 'viewRequest']);
-    Route::post('request/{id}/approve', [RequestController::class, 'approve']); // MUA can approve requests
-    Route::post('request/{id}/reject', [RequestController::class, 'reject']); // MUA can reject requests
-
-    // Schedules Route
-    Route::get('mua/schedules', [ScheduleController::class, 'getSchedules']);
-
-    // Packages Route
-    Route::get('mua/mua-packages', [PackageController::class, 'show_mua_packages']);
-    Route::get('mua/packages', [PackageController::class, 'index']);
-    Route::get('mua/packages/{id}', [PackageController::class, 'show']);
-    Route::post('mua/packages', [PackageController::class, 'store']);
-    Route::put('mua/packages/{id}', [PackageController::class, 'update']);
-    Route::delete('mua/packages/{id}', [PackageController::class, 'destroy']);
-    Route::post('mua/packages/{id}/image', [PackageController::class, 'uploadImage']);
-
-    // Package Details Route
-    Route::get('mua/packages-details', [PackageDetailController::class, 'index']);
-    Route::get('mua/packages-details/{id}', [PackageDetailController::class, 'show']);
-    Route::post('mua/packages-details', [PackageDetailController::class, 'store']);
-    Route::put('mua/packages-details/{id}', [PackageDetailController::class, 'update']);
-    Route::delete('mua/packages-details/{id}', [PackageDetailController::class, 'destroy']);
+    Route::get('/requests', [RequestController::class, 'viewAllRequests']);
     
+    Route::prefix('request')->group(function () {
+        Route::get('{id}', [RequestController::class, 'viewRequest']);
+        Route::post('{id}/approve', [RequestController::class, 'approve']);
+        Route::post('{id}/reject', [RequestController::class, 'reject']);
+    });
 
-    Route::resource('mua/packages', PackageController::class);
+    Route::prefix('schedules')->group(function () {
+        Route::get('/', [ScheduleController::class, 'getSchedules']);
+        Route::get('filtered', [ScheduleController::class, 'filteredSchedules']);
+    });
 
-    // DayOff Route
-    Route::get('mua/dayOffs', [OffDayController::class, 'getAllDayOff']);
-    Route::post('mua/dayOff', [OffDayController::class, 'setDayOff']);
-    Route::put('mua/dayoff/{id}', [OffDayController::class, 'editDayOff']);
-    Route::delete('mua/dayoff/{id}', [OffDayController::class, 'deleteDayOff']);
+    Route::prefix('packages')->group(function () {
+        Route::get('/', [PackageController::class, 'index']);
+        Route::get('{id}', [PackageController::class, 'show']);
+        Route::post('/', [PackageController::class, 'store']);
+        Route::put('{id}', [PackageController::class, 'update']);
+        Route::delete('{id}', [PackageController::class, 'destroy']);
+        Route::post('{id}/image', [PackageController::class, 'uploadImage']);
+    });
 
-    // MUA History
-    Route::get('mua/history', [HistoryRequestController::class, 'muaHistory']);
+    Route::prefix('packages-details')->group(function () {
+        Route::get('/', [PackageDetailController::class, 'index']);
+        Route::get('{id}', [PackageDetailController::class, 'show']);
+        Route::post('/', [PackageDetailController::class, 'store']);
+        Route::put('{id}', [PackageDetailController::class, 'update']);
+        Route::delete('{id}', [PackageDetailController::class, 'destroy']);
+    });
 
-    // MUA Transactions
-    Route::post('/mua/transactions/confirm-payment/{id}', [TransactionController::class, 'confirmPayment']);
-    Route::get('/mua/transactions', [TransactionController::class, 'showTransactionsByMUA']);
+    Route::prefix('dayOffs')->group(function () {
+        Route::get('/', [OffDayController::class, 'getAllDayOff']);
+        Route::post('/', [OffDayController::class, 'setDayOff']);
+        Route::put('{id}', [OffDayController::class, 'editDayOff']);
+        Route::delete('{id}', [OffDayController::class, 'deleteDayOff']);
+    });
 
-    // MUA Payment Method
-    Route::get('mua/payment-methods', [PaymentMethodController::class, 'getAllPaymentMethods']);
-    Route::post('mua/payment-methods', [PaymentMethodController::class, 'createPaymentMethod']);
-    Route::put('mua/payment-methods/{id}', [PaymentMethodController::class, 'updatePaymentMethod']);
-    Route::delete('mua/payment-methods/{id}', [PaymentMethodController::class, 'deletePaymentMethod']);
-    Route::put('/payment-method/{id}/status', [PaymentMethodController::class, 'updatePaymentMethodStatus']);
+    Route::get('history', [HistoryRequestController::class, 'muaHistory']);
+    Route::get('transactions', [TransactionController::class, 'showTransactionsByMUA']);
+    Route::post('transactions/confirm-payment/{id}', [TransactionController::class, 'confirmPayment']);
+    Route::get('history-transaction', [HistoryTransactionController::class, 'showByMua']);
 
-    // MUA Off Day Route
-    Route::get('mua/off-days', [OffDayController::class, 'getAllOffDays']);
-    Route::post('mua/off-day', [OffDayController::class, 'setOffDay']);
-    Route::put('mua/off-day/{id}', [OffDayController::class, 'editOffDay']);
-    Route::delete('mua/off-day/{id}', [OffDayController::class, 'deleteOffDay']);
+    Route::prefix('payment-methods')->group(function () {
+        Route::get('/', [PaymentMethodController::class, 'getAllPaymentMethods']);
+        Route::post('/', [PaymentMethodController::class, 'createPaymentMethod']);
+        Route::put('{id}', [PaymentMethodController::class, 'updatePaymentMethod']);
+        Route::delete('{id}', [PaymentMethodController::class, 'deletePaymentMethod']);
+        Route::put('{id}/status', [PaymentMethodController::class, 'updatePaymentMethodStatus']);
+    });
+
     
-    // MUA Logout Route
-    Route::post('mua/logout', [LogoutController::class, 'logout']);
-
+    Route::prefix('cancel-request')->group(function () {
+        Route::get('/', [RequestController::class, 'showCancelRequest']);
+        Route::post('/approve/{id}', [RequestController::class, 'approveCancel']);
+        Route::post('/reject/{id}', [RequestController::class, 'rejectCancel']);
+    });
+    
+    Route::prefix('cancel-transaction')->group(function () {
+        Route::get('/', [TransactionController::class, 'showCancelRequest']);
+        Route::post('/approve/{id}', [TransactionController::class, 'approveCancel']);
+        Route::post('/reject/{id}', [TransactionController::class, 'rejectCancel']);
+    });
+    Route::post('logout', [LogoutController::class, 'logout']);
 });
-
-
