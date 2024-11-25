@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Transaction;
+use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\RequestResource;
 
 class TransactionController extends Controller
 {
@@ -96,5 +97,98 @@ class TransactionController extends Controller
 
     return response()->json(['message' => 'Payment confirmed successfully.'], 200);
 }
+
+    public function requestCancel($id)
+    {
+        try {
+            $transaction = Transaction::findOrFail($id);
+
+            if (Auth::id() !== $transaction->request->id_user) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $transactionCreatedAt = $transaction->updated_at;
+            $threeHoursLater = $transactionCreatedAt->copy()->addHours(3);
+
+            if (now()->greaterThan($threeHoursLater)) {
+                return response()->json(['message' => 'Request to cancel the transaction can only be made within 3 hours of the transaction.'], 403);
+            }
+
+            if ($transaction->status === 'unpaid') {
+                $transaction->update(['status' => 'canceled']);
+                $transaction->request->update(['status' => 'canceled']);
+                return response()->json(['message' => 'Transaction successfully cancelled.'], 200);
+            } else {
+                $transaction->update(['status' => 'request cancel']);
+                return response()->json(['message' => 'Request to cancel the transaction has been sent.'], 200);
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function showCancelRequest(){
+        try {
+            $transactions = Transaction::where('status', 'request cancel')
+                ->with('request')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $transactions
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function approveCancel($id)
+    {
+        try {
+            $transaction = Transaction::with('request')->findOrFail($id);
+
+            if (Auth::id() !== $transaction->request->id_mua) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $transaction->update(['status' => 'canceled']);
+            $transaction->request->update(['status' => 'canceled']);
+
+            return response()->json(['message' => 'Transaction successfully cancelled.'], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Failed to cancel the request.'], 400);
+        }
+    }
+
+    public function rejectCancel($id)
+    {
+        try {
+            $transaction = Transaction::with('request')->findOrFail($id);
+
+            if (Auth::id() !== $transaction->request->id_mua) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // Update `status` to match `payment_status` when the cancel request is rejected
+            $transaction->update(['status' => $transaction->payment_status]);
+
+            return response()->json(['message' => 'Request has been rejected.'], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to reject the request.'
+            ], 400);
+        }
+    }
+
 
 }

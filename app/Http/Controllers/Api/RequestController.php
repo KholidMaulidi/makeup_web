@@ -138,11 +138,11 @@ class RequestController extends Controller
 
             $id_mua = Package::find($validatedData['packages'][0]['id'])->mua_id;
 
-            // Check for existing approved request and day off
             $existingApprovedRequest = Request::where('id_mua', $id_mua)
-                ->where('date', $date->format('Y-m-d'))
-                ->where('status', 'approved')
-                ->exists();
+            ->whereDate('date', $date->format('Y-m-d'))
+            ->whereTime('date', '=', $date->format('H:i:s'))  // Menambahkan seleksi berdasarkan jam dan menit
+            ->where('status', 'approved')
+            ->exists();
             $dayOff = DayOff::where('id_mua', $id_mua)
                 ->whereDate('date', $date)
                 ->exists();
@@ -190,12 +190,23 @@ class RequestController extends Controller
                 'distance' => $distance,
             ]);
 
-            // Create request packages
             foreach ($validatedData['packages'] as $package) {
+                $packageData = Package::find($package['id']);
+                $totalPerPackage = $packageData->price * $package['quantity'];
+
+                $packageDetails = [
+                    'id' => $packageData->id,
+                    'package_name' => $packageData->package_name,
+                    'price' => $packageData->price,
+                    'image' => $packageData->image,
+                    'total_per_package' => $totalPerPackage,
+                ];
+
                 RequestPackage::create([
                     'request_id' => $newRequest->id,
                     'package_id' => $package['id'],
                     'quantity' => $package['quantity'],
+                    'package_details' => json_encode($packageDetails),
                 ]);
             }
 
@@ -342,4 +353,85 @@ class RequestController extends Controller
         $package = Package::find($package_id);
         return $package->price * $quantity;
     }
+
+    public function requestCancel($id)
+    {
+        try {
+            $request = Request::findOrFail($id);
+
+            if (Auth::id() !== $request->id_user) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            if ($request->status === 'approved') {
+                return response()->json(['message' => 'Cannot cancel, the request has already been approved.'], 403);
+            }
+
+            $request->update(['status' => 'request cancel']);
+
+            return response()->json(['message' => 'Request to cancel the request has been sent.'], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function showCancelRequest()
+    {
+        try {
+            $requests = Request::where('status', 'request cancel')
+            ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $requests
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function approveCancel($id)
+    {
+        try {
+            $request = Request::findOrFail($id);
+
+            if (Auth::id() !== $request->id_mua) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $request->update(['status' => 'canceled']);
+            
+
+            return response()->json(['message' => 'Request has been canceled.'], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Failed to cancel the request.'], 400);
+        }
+    }
+
+    public function rejectCancel($id)
+    {
+        try {
+            $request = Request::indOrFail($id);
+
+            if (Auth::id() !== $request->id_mua) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $request->update(['status' => 'pending']);
+
+            return response()->json(['message' => 'Request has been rejected.'], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to reject the request.'
+            ], 400);
+        }
+    }
+
 }

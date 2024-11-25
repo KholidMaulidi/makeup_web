@@ -13,8 +13,18 @@ class Transaction extends Model
         'request_id',
         'payment_status',
         'payment_proof',
+        'status',
+        'updated_at',
     ];
 
+    public function getPaymentProofAttribute()
+    {
+        if (empty($this->attributes['payment_proof'])) {
+            return null;
+        }
+        return url('/storage/images/' . $this->attributes['payment_proof']);
+    }
+    
     public function request()
     {
         return $this->belongsTo(Request::class);
