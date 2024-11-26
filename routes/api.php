@@ -3,11 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Region\DistrictController;
+use App\Http\Controllers\Api\Region\ProvinceController;
 use App\Http\Controllers\Api\OffDayController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\RequestController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -17,10 +20,9 @@ use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\PackageDetailController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\HistoryRequestController;
+use App\Http\Controllers\Api\Region\RegencyController;
 use App\Http\Controllers\Api\HistoryTransactionController;
 use App\Http\Controllers\Api\MakeupArtistProfileController;
-use App\Http\Controllers\Api\ServiceController;
-use App\Models\Service;
 
 // Public routes
 Route::post('register', [RegisterController::class, 'register']);
@@ -33,6 +35,11 @@ Route::get('mua/{id}/reviews', [ReviewController::class, 'showByMua']);
 Route::get('mua/all-galleries', [GalleryController::class, 'show_gallery_user']);
 Route::get('make-up-artist/{id}', [MakeupArtistProfileController::class, 'showMuaProfile']);
 Route::get('services',[ServiceController::class, 'index']);
+
+Route::get('provinces', [ProvinceController::class, 'index']);
+Route::get('regencies', [RegencyController::class, 'index']);
+Route::get('districts', [DistrictController::class, 'index']);
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('upload-avatar', [UserController::class, 'updateAvatar']);
