@@ -78,7 +78,9 @@ class MakeupArtistProfileController extends Controller
     {
         $name = $request->input('name');
         $service = $request->input('service_id');
-        $city = $request->input('city');
+        $province = $request->input('province');
+        $city = $request->input('regency');
+        $district = $request->input('district');
         $minPrice = $request->input('min_price');
         $maxPrice = $request->input('max_price');
 
@@ -93,13 +95,21 @@ class MakeupArtistProfileController extends Controller
                 $q->where('service_id', $service);
             });
         }
-
+        if ($province) {
+            $query->whereHas('makeupArtistProfile', function ($q) use ($province) {
+                $q->where('province', 'like', '%' . $province . '%');
+            });
+        }
         if ($city) {
             $query->whereHas('makeupArtistProfile', function ($q) use ($city) {
                 $q->where('city', 'like', '%' . $city . '%');
             });
         }
-
+        if ($district) {
+            $query->whereHas('makeupArtistProfile', function ($q) use ($district) {
+                $q->where('subdistrict', 'like', '%' . $district . '%');
+            });
+        }
         if ($minPrice) {
             $query->whereHas('packages', function ($q) use ($minPrice) {
                 $q->where('price', '>=', $minPrice);
