@@ -15,10 +15,16 @@ class ReviewController extends Controller
 {
     use JsonResponseTrait;
 
-    public function showByMua($id)
+    public function showByMua(HttpRequest $request, $id)
     {
         try {
-            $reviews = Review::where('mua_id', $id)->with('user')->get();
+            $reviews = Review::where('mua_id', $id)->get();
+            if ($request->has('rating')) {
+                $reviews = Review::where('mua_id', $id)
+                    ->where('rating', $request->rating)
+                    ->get();
+            }
+            
 
             if ($reviews->isEmpty()) {
                 return $this->successResponse([], 'No Reviews available', 200);
