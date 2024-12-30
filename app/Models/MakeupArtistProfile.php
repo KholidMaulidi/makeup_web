@@ -13,9 +13,7 @@ class MakeupArtistProfile extends Model
         'user_id',
         'gender',
         'address',
-        'province',
-        'city',
-        'subdistrict',
+        'district_id',
         'postal_code',
         'no_hp',
         'description',
@@ -25,5 +23,9 @@ class MakeupArtistProfile extends Model
 
     public function user(){
         return $this->belongsTo(User::class);
+    }
+
+    public function district(){
+        return $this->belongsTo(District::class);
     }
 }

@@ -3,10 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\Region\DistrictController;
-use App\Http\Controllers\Api\Region\ProvinceController;
 use App\Http\Controllers\Api\OffDayController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\RequestController;
@@ -21,6 +20,8 @@ use App\Http\Controllers\Api\PackageDetailController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\HistoryRequestController;
 use App\Http\Controllers\Api\Region\RegencyController;
+use App\Http\Controllers\Api\Region\DistrictController;
+use App\Http\Controllers\Api\Region\ProvinceController;
 use App\Http\Controllers\Api\HistoryTransactionController;
 use App\Http\Controllers\Api\MakeupArtistProfileController;
 
@@ -36,6 +37,8 @@ Route::get('mua/all-galleries', [GalleryController::class, 'show_gallery_user'])
 Route::get('make-up-artist/{id}', [MakeupArtistProfileController::class, 'showMuaProfile']);
 Route::get('services',[ServiceController::class, 'index']);
 
+Route::get('statuses', [StatusController::class, 'index']);
+
 Route::get('provinces', [ProvinceController::class, 'index']);
 Route::get('regencies', [RegencyController::class, 'index']);
 Route::get('districts', [DistrictController::class, 'index']);
@@ -48,13 +51,12 @@ Route::middleware('auth:sanctum')->group(function () {
 // Routes for users
 Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(function () {
     Route::prefix('requests')->group(function () {
-        Route::get('profile', [UserProfileController::class, 'showProfile']);
         Route::post('profile', [UserProfileController::class, 'updateProfile']);
     });
     Route::post('logout', [LogoutController::class, 'logout']);
     Route::post('request/show', [RequestController::class, 'show']);
     Route::post('request/store', [RequestController::class, 'create']);
-
+    
     Route::prefix('review')->group(function () {
         Route::post('{mua_id}', [ReviewController::class, 'store']);
         Route::put('{id}', [ReviewController::class, 'update']);
@@ -64,9 +66,10 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':1'])->group(functio
         Route::get('{id}/schedules', [ScheduleController::class, 'getMuaSchedules']);
         Route::get('{id}/schedules/filtered', [ScheduleController::class, 'filteredSchedules']);
     });
-
+    
     
     Route::prefix('user')->group(function () {
+        Route::get('profile', [UserProfileController::class, 'showProfile']);
         Route::get('history', [HistoryRequestController::class, 'userHistory']);
         Route::get('history/test', [HistoryRequestController::class, 'testMoveToHistory']);
         Route::post('transaction-cancel/{id}', [TransactionController::class, 'requestCancel']);
@@ -115,13 +118,13 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':2'])->prefix('mua')
         Route::post('{id}/image', [PackageController::class, 'uploadImage']);
     });
 
-    Route::prefix('packages-details')->group(function () {
-        Route::get('/', [PackageDetailController::class, 'index']);
-        Route::get('{id}', [PackageDetailController::class, 'show']);
-        Route::post('/', [PackageDetailController::class, 'store']);
-        Route::put('{id}', [PackageDetailController::class, 'update']);
-        Route::delete('{id}', [PackageDetailController::class, 'destroy']);
-    });
+    // Route::prefix('packages-details')->group(function () {
+    //     Route::get('/', [PackageDetailController::class, 'index']);
+    //     Route::get('{id}', [PackageDetailController::class, 'show']);
+    //     Route::post('/', [PackageDetailController::class, 'store']);
+    //     Route::put('{id}', [PackageDetailController::class, 'update']);
+    //     Route::delete('{id}', [PackageDetailController::class, 'destroy']);
+    // });
 
     Route::prefix('dayOffs')->group(function () {
         Route::get('/', [OffDayController::class, 'getAllDayOff']);
