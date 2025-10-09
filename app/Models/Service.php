@@ -5,18 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PackageDetail extends Model
+class Service extends Model
 {
     use HasFactory;
 
-    protected $table = 'package_details';
-    protected $fillable = [
-        'item_name',
-    ];
+    protected $table = 'services';
 
+    protected $fillable = [
+        'service_name',
+        'image',
+    ];
 
     public function packages()
     {
-        return $this->belongsTo(Package::class, 'package_id');
+        return $this->hasMany(Package::class, 'service_id');
     }
 }

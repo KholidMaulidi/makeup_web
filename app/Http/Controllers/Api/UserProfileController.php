@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Traits\JsonResponseTrait;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\ProfileResource;
 
 class UserProfileController extends Controller
 {
@@ -17,8 +18,13 @@ class UserProfileController extends Controller
         $profile = $user->userProfile;
 
         return $this->successResponse([
-            'user' => $user,
-            'profile' => $profile,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+            'profile' => new ProfileResource($profile),
         ], 'Profile Information', 200);
     }
 

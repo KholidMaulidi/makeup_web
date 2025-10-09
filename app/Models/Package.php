@@ -13,9 +13,11 @@ class Package extends Model
 
     protected $fillable = [
         'package_name',
+        'iamge',
         'description',
         'price',
-        'mua_id'
+        'mua_id',
+        'service_id',
     
     ];
 
@@ -32,5 +34,10 @@ class Package extends Model
     public function requestPackages()
     {
         return $this->hasMany(RequestPackage::class, 'package_id');
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'service_id');
     }
 }

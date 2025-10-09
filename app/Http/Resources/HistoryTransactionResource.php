@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class RequestResource extends JsonResource
+class HistoryTransactionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,17 +18,17 @@ class RequestResource extends JsonResource
         return [
             'id' => $this->id,
             'user' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
+                'id' => $this->request->user->id,
+                'name' => $this->request->user->name,
             ],
             'mua' => [
-                'id' => $this->mua->id,
-                'name' => $this->mua->name,
+                'id' => $this->request->mua->id,
+                'name' => $this->request->mua->name,
             ],
-            'packages' => $this->requestPackages->map(function ($requestPackage) {
+            'packages' => $this->request->requestPackages->map(function ($requestPackage) {
                 $packageDetails = json_decode($requestPackage->package_details);
                 return [
-                    'id' => $packageDetails->id, 
+                    'id' => $packageDetails->id,
                     'package_name' => $packageDetails->package_name,
                     'price' => $packageDetails->price,
                     'image' => $packageDetails->image ? url('storage/images/packages/' . $packageDetails->image) : null,
@@ -35,16 +36,14 @@ class RequestResource extends JsonResource
                     'total_per_package' => $packageDetails->total_per_package,
                 ];
             }),
-            'date' => $this->date->format('Y-m-d'),
-            'start_time' => $this->start_time->format('H:i'),
-            'end_time' => $this->end_time->format('H:i'),
-            'visit_type' => $this->visit_type,
-            'distance' => $this->distance,
-            'postage' => $this->postage,
-            'total_price' => $this->total_price,
+            'date' => $this->request->date->format('Y-m-d'),
+            'start_time' => $this->request->start_time->format('H:i'),
+            'end_time' => $this->request->end_time->format('H:i'),
+            'visit_type' => $this->request->visit_type,
+            'distance' => $this->request->distance,
+            'postage' => $this->request->postage,
+            'total_price' => $this->request->total_price,
             'status' => $this->status,
-            // 'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            // 'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
         ];
     }
 }
