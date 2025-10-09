@@ -17,23 +17,32 @@ class TransactionController extends Controller
         $transactions = Transaction::whereHas('request', function ($query) use ($userId) {
             $query->where('id_user', $userId);
         })
-        ->with('request') 
+        ->with('request')
         ->get();
 
         $muaId = $transactions->pluck('request.id_mua')->unique();
 
-        $paymentMethodTypes = PaymentMethod::whereIn('mua_id', $muaId)
+        $paymentMethods = PaymentMethod::whereIn('mua_id', $muaId)
             ->where('status', 'active')
             ->with('type')
             ->get()
-            ->pluck('type.type') 
-            ->unique(); 
-
+            ->groupBy('type.type') 
+            ->map(function ($methods) {
+                return $methods->map(function ($method) {
+                    return [
+                        'payment_method_name' => $method->payment_method_name,
+                        'payment_method_number' => $method->payment_method_number,
+                    ];
+                });
+            });
+    
         return response()->json([
             'transactions' => $transactions,
-            'payment_method_types' => $paymentMethodTypes 
+            'payment_methods' => $paymentMethods
         ], 200);
     }
+    
+
 
 
     public function showTransactionsByMUA()
